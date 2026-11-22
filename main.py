@@ -1,25 +1,73 @@
+
 import joblib
+import pandas as pd
 from pathlib import Path
 
-# Locate the project folder
 BASE_DIR = Path(__file__).resolve().parent
 
-# Load the trained models
-random_forest_model = joblib.load(
-    BASE_DIR / "random_forest_model.pkl"
-)
+# Load trained models and preprocessing tools
+rf_model = joblib.load(BASE_DIR / "random_forest_model.pkl")
+log_model = joblib.load(BASE_DIR / "logistic_regression_model.pkl")
+imputer = joblib.load(BASE_DIR / "heart_disease_imputer.pkl")
+scaler = joblib.load(BASE_DIR / "heart_disease_scaler.pkl")
 
-logistic_regression_model = joblib.load(
-    BASE_DIR / "logistic_regression_model.pkl"
-)
+FEATURES = [
+    "age", "sex", "cp", "trestbps", "chol",
+    "fbs", "restecg", "thalach", "exang",
+    "oldpeak", "slope", "ca", "thal"
+]
 
-# Load preprocessing tools
-imputer = joblib.load(
-    BASE_DIR / "heart_disease_imputer.pkl"
-)
 
-scaler = joblib.load(
-    BASE_DIR / "heart_disease_scaler.pkl"
-)
+def predict_heart_disease(patient_data, model_choice):
+    patient = pd.DataFrame([patient_data], columns=FEATURES)
+    patient_imputed = imputer.transform(patient)
 
-print("Heart Disease Prediction System Loaded Successfully!")
+    if model_choice == "1":
+        prediction = rf_model.predict(patient_imputed)[0]
+
+    elif model_choice == "2":
+        patient_scaled = scaler.transform(patient_imputed)
+        prediction = log_model.predict(patient_scaled)[0]
+
+    else:
+        raise ValueError("Invalid model selection.")
+
+    return prediction
+
+
+def main():
+    print("\n====================================")
+    print("     HEART DISEASE PREDICTION")
+    print("====================================")
+
+    patient_data = []
+
+    for feature in FEATURES:
+        value = float(input(f"Enter {feature}: "))
+        patient_data.append(value)
+
+    print("\nSelect a prediction model:")
+    print("1. Random Forest")
+    print("2. Logistic Regression")
+
+    choice = input("Enter choice (1 or 2): ")
+
+    if choice not in ["1", "2"]:
+        print("Invalid selection.")
+        return
+
+    prediction = predict_heart_disease(patient_data, choice)
+
+    print("\n========== PREDICTION ==========")
+
+    if prediction == 1:
+        print("Prediction: Heart disease detected.")
+    else:
+        print("Prediction: No heart disease detected.")
+
+    print("\nThis project is for educational purposes only.")
+    print("It is not a medical diagnostic tool.")
+
+
+if __name__ == "__main__":
+    main()
